@@ -1,3 +1,14 @@
+"""
+Controle de Pedidos - versão Python (Streamlit)
+
+Como rodar:
+    pip install streamlit pandas openpyxl
+    streamlit run app.py
+
+Os dados ficam no arquivo "controle_pedidos.xlsx", na mesma pasta do app.
+Na primeira vez, use a barra lateral para importar o seu Excel modelo.
+"""
+
 import io
 import unicodedata
 from pathlib import Path
