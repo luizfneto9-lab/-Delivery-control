@@ -52,7 +52,7 @@ def tabela_vazia() -> pd.DataFrame:
     return df
 
 
-def preparar(df: pd.DataFrame) -> pd.DataFrame:
+def preparar(df: pd.DataFrame, resetar_indice: bool = True) -> pd.DataFrame:
     """Garante colunas, tipos e limpa textos."""
     for c in COLUNAS:
         if c not in df.columns:
@@ -70,7 +70,7 @@ def preparar(df: pd.DataFrame) -> pd.DataFrame:
     df["STATUS"] = df["STATUS"].map(
         lambda s: next((x for x in STATUS if normalizar(x) == normalizar(s)), s)
     )
-    return df.reset_index(drop=True)
+    return df.reset_index(drop=True) if resetar_indice else df
 
 
 def importar_excel(arquivo) -> pd.DataFrame:
@@ -180,7 +180,8 @@ with st.sidebar:
             st.rerun()
         except Exception as e:
             st.error(str(e))
-    if st.button("Salvar", type="primary", width="stretch"):
+    # CORREÇÃO 1: use_container_width=True no lugar de width="stretch"
+    if st.button("Salvar", type="primary", use_container_width=True):
         salvar(st.session_state.df)
         st.session_state.msg = f"Salvo em {ARQUIVO.name}"
     st.download_button(
@@ -188,7 +189,7 @@ with st.sidebar:
         data=para_excel(st.session_state.df),
         file_name="controle-de-pedidos.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        width="stretch",
+        use_container_width=True,
     )
     if st.session_state.get("msg"):
         st.success(st.session_state.msg)
@@ -256,14 +257,15 @@ with aba_pedidos:
         visivel[COLUNAS + CALCULADAS],
         column_config=cfg,
         num_rows="dynamic",
-        width="stretch",
+        use_container_width=True,
         height=520,
         key="editor",
     )
 
-    # devolve as edições para a tabela completa
+    # CORREÇÃO 2: resetar_indice=False mantém a posição original das linhas editadas
     base = st.session_state.df
-    novo = pd.concat([base.drop(index=visivel.index), preparar(editado[COLUNAS])], ignore_index=False)
+    edicoes_limpas = preparar(editado[COLUNAS], resetar_indice=False)
+    novo = pd.concat([base.drop(index=visivel.index), edicoes_limpas], ignore_index=False)
     novo = novo.sort_index(kind="stable").reset_index(drop=True)
     if not novo.equals(base):
         st.session_state.df = novo
@@ -301,6 +303,6 @@ with aba_resumo:
         r["Andamento"] = (r["Entregues"] / base_ent).fillna(0)
         st.dataframe(
             r.drop(columns="Cancelados"),
-            width="stretch", hide_index=True,
+            use_container_width=True, hide_index=True,
             column_config={"Andamento": st.column_config.ProgressColumn("Andamento", format="percent", min_value=0, max_value=1)},
         )
